@@ -41,13 +41,22 @@ const slides = [...track.querySelectorAll('.card')];
 const dots = [...document.querySelectorAll('[data-slide]')];
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 let activeSlide = 0;
+const endStyle = document.createElement('style');
+endStyle.textContent = '.cards::after{display:none!important}.carousel-arrows button:disabled{opacity:.35;cursor:default}';
+document.head.append(endStyle);
+function syncArrows() {
+  document.querySelector('[data-direction="-1"]').disabled = track.scrollLeft <= 1;
+  document.querySelector('[data-direction="1"]').disabled = track.scrollLeft >= track.scrollWidth - track.clientWidth - 1;
+}
 function goToSlide(index) {
-  const next = (index + slides.length) % slides.length;
+  const next = Math.max(0, Math.min(index, slides.length - 1));
   track.scrollTo({ left: slides[next].offsetLeft - slides[0].offsetLeft, behavior: reducedMotion.matches ? 'instant' : 'smooth' });
 }
 function updateCarousel() {
   const position = track.scrollLeft;
+  syncArrows();
   activeSlide = slides.reduce((closest, slide, index) => Math.abs(slide.offsetLeft - slides[0].offsetLeft - position) < Math.abs(slides[closest].offsetLeft - slides[0].offsetLeft - position) ? index : closest, 0);
+  if (position > 1 && position >= track.scrollWidth - track.clientWidth - 1) activeSlide = slides.length - 1;
   dots.forEach((dot, index) => { if (index === activeSlide) dot.setAttribute('aria-current', 'true'); else dot.removeAttribute('aria-current'); });
   document.querySelector('.carousel-status').textContent = `${String(activeSlide + 1).padStart(2, '0')} / 04`;
 }
@@ -59,3 +68,5 @@ track.addEventListener('keydown', event => {
 });
 track.addEventListener('scroll', updateCarousel, { passive: true });
 window.addEventListener('resize', updateCarousel);
+
+updateCarousel();
